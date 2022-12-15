@@ -1,0 +1,806 @@
+---
+title: "Final Project"
+author: "Judy Xie"
+date: "2022-12-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Datasets Used
+#install.packages("haven")
+library(haven)
+main <- read_dta ("~/Desktop/final project/files/main.dta")
+main_long<-read_dta ("~/Desktop/final project/files/main_long.dta")
+
+```
+
+## PART ONE<br>
+#### **Description about the Data**
+```{r}
+
+library(tidyverse)
+
+#make a column with categorical gender
+main$gender2<- main$female
+main$gender2<- ifelse((main$gender2==1), "female", "male")
+
+#bar graph of the gender// seeing distribution of gender in the dataset
+ggplot(main, aes(x=as.factor(gender2), fill=as.factor(gender2) )) +  
+  geom_bar( ) + theme(legend.position="none")+ xlab("genders")
+
+#l<-main%>%
+       #filter(female== 0)
+#dim(l)[1]
+#bar graph of the age// seeing distribution of age in the dataset
+
+ggplot(main, aes(x=as.factor(age), fill=as.factor(age) )) +  
+  geom_bar( ) +
+  theme(legend.position="none")+ xlab("ages")
+
+
+#bar graph of the age// seeing distribution of desrvingness measure
+ggplot(main, aes(x=as.factor(deserve), fill=as.factor(deserve) )) +  
+  geom_bar( ) +
+  theme(legend.position="none")+ xlab("desrvingness measure (1-100)")
+
+#bargraph of desrvingness measure by gender
+ggplot(main, aes(factor(main$deserve), fill = factor(gender2))) +
+  geom_bar(position = "dodge2")+ labs(title= "Deservingness Measure by  Gender", 
+       x= "Deservingness Measure (1-100)",
+       y= "Count")
+#-------------- 
+#bar graph of the performance by Gender
+ggplot(main, aes(factor(main$num_correct), fill = factor(gender2))) +
+  geom_bar(position = "dodge2")+ labs(title= "Performance and Gender", 
+       x= "Performance(Number Correct)",
+       y= "Count")
+
+#bar graph of the belief by gender
+ggplot(main, aes(factor(main$belief), fill = factor(gender2))) +
+  geom_bar(position = "dodge2")+ labs(title= "Belief and Gender", 
+       x= "Belief",
+       y= "Count")
+
+# #bar graph of the beleif_gap
+ggplot(main, aes(factor(main$belief_gap), fill = factor(gender2))) +
+  geom_bar(position = "dodge2")+ labs(title= "Performance and Gender", 
+       x= "Belief Gap",
+       y= "Count")
+
+
+#outcome is belief gap (main$belief_gap)
+  #belief is the number a question he or she believes they answered correctly 
+  #belief gap = belief - correct 
+  # so if you have a negative then you are less likely to believe in yourself / your number of correctness ! 
+
+
+
+#BoxPlot               
+boxplot(belief~gender2,data=main, main="Belief Scores by Gender",
+   xlab="Gender", ylab="Scores", col="orange")
+
+#find the average belief score for women 
+
+female_beliefscore <- main %>%
+       select(belief_gap, female) %>%
+       filter(female== 1)
+female_beliefscore = subset(female_beliefscore, select = -c(female) )
+
+female_beliefscore<-dplyr::pull(female_beliefscore, belief_gap)
+
+mean(female_beliefscore)
+
+#average belief score for men
+male_beliefscore <- main %>%
+       select(belief_gap, male) %>%
+       filter(male== 1)
+male_beliefscore = subset(male_beliefscore, select = -c(male) )
+
+male_beliefscore<-dplyr::pull(male_beliefscore, belief_gap)
+
+mean(male_beliefscore)
+
+
+```
+
+
+## PART TWO<br>
+#### **Reproducing the Result**
+
+I reproduced the CDF graphs that were found in the paper as well as its corresponding linear regression table. This table can be found as "Table A.1" in the following appendix:
+
+[I'm an inline-style link](https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/qje/137/3/10.1093_qje_qjac003/2/qjac003_online_appendix.pdf?Expires=1672883765&Signature=SJ4WHsC5FWOJPMb1Ep8gE2WdbI4ftHSbvVNnlG4cILljIH-e5Gf5pq2Y50tqlDoXciRc7hsIG1iFViVFpqiz286zgRr6joszABSzmSCVmpbzogYRS~A8S0Mh5O2MBv9inyM4QZ4Swc6jn1WUI0nwtk-3RTZoXO1-1Jxe7C5EUuyGVfxNitKh03nQCE3k3PriIjKC8r0ED1Wa8ghHks3Ui3J8EEG8Qz4Mv5kKsMOvNr4Gx9HoXoXnXi5CX6iHD3OXfCaVEX6MpohkoHAgRCtDKWDeYzzC0lD2AK0RCiPzm4K~orkYu-NSWeXgvZzQJv65kjq-62az1xSx4xbW0opJIQ__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA)
+
+
+```{r}
+
+library(tidyverse)
+library(dplyr)
+
+
+#install.packages("stats")
+
+# Load the package
+library(stats)
+
+#i.e., all but the Private (Verbal) version)
+
+new.main <- main %>%
+       filter(allmath== 1)
+
+dim(new.main)[1]
+
+#Figure One: Panel A
+par(pty='s') 
+plot(ecdf(new.main$num_correct), verticals=T, do.points=F,col.01line = NULL,col="white", xlab = "Performance", ylab = "CDF", main = "Performance")
+
+# Add a line for each gender group to the chart
+lines(ecdf(new.main$num_correct[new.main$female == 1]), verticals=T, do.points=F,col.01line = NULL, col = "black")
+lines(ecdf(new.main$num_correct[new.main$female == 0]), verticals=T, do.points=F, col.01line = NULL, col = "blue")
+
+osl_performance<- lm(num_correct~female, data=new.main)
+summary(osl_performance)
+
+
+
+```
+
+
+```{r}
+#Figure One: Panel B
+par(pty='s') 
+new.main$abs_belief<-abs(new.main$belief)
+plot(ecdf(new.main$abs_belief), xlab = "Absolute Performance Beliefs", ylab = "CDF", verticals=T, do.points=F, col.01line = NULL,col="white", main = "Belief")
+
+# Add a line for each gender group to the chart
+lines(ecdf(new.main$abs_belief[new.main$female == 1]), col = "black", verticals=T, do.points=F, col.01line = NULL)
+lines(ecdf(new.main$abs_belief[new.main$female == 0]), col = "blue", verticals=T, do.points=F, col.01line = NULL)
+
+osl_belief<- lm(abs_belief~female, data=new.main)
+```
+
+
+```{r}
+#Figure One: Panel C
+
+par(pty='s') 
+
+plot(ecdf(new.main$belief_gap), xlab = "Absolute Performance Beliefs- Performance", ylab = "CDF", verticals=T, do.points=F, col.01line = NULL,col="white", main = "Belief - Performance")
+
+# Add a line for each gender group to the chart
+lines(ecdf(new.main$belief_gap[new.main$female == 1]), col = "black", verticals=T, do.points=F, col.01line = NULL)
+
+lines(ecdf(new.main$belief_gap[new.main$female == 0]), col = "blue", verticals=T, do.points=F, col.01line = NULL)
+
+osl_belief_performance<- lm(belief_gap~female, data=new.main)
+summary(osl_belief_performance)
+
+
+
+#--------
+```
+
+###### *The Regression Table*<br>
+```{r}
+
+#install.packages("stargazer")
+library(stargazer)
+
+stargazer(osl_performance, osl_belief, osl_belief_performance,  type = "text", summary = TRUE, title = "Regression Results")
+
+ggplot(data=main, aes(x=female, y=belief_gap))+ geom_point() +
+  geom_smooth(method=lm, se=FALSE)
+
+```
+
+The table indicates the result of three different linear regression models that evaluate genders affect on num_correct ie Performance, abs_belief ie a Belief Score, and lastly the belief_gap which indicates the difference between the num_correct- how well an individual did- and their belief - how well they believed they did. I will be evaluating the third model that is concerned with genders affect on belief_gap.
+
+* * *
+### Can Ignore This 
+*TABLE 2 (Attempting to reproduce the other regression  results  just to explore the paper a bit more but couldn't seem to quite get it)*<br>
+
+I tried reproducing these other regression results indicated as TABLE 2 and TABLE 3 in the paper. I walk through how I would be able to do this using comments; however, my regression coefficients were off, and since I knew the research results were done with these data-sets, I couldn't exactly figure out why. In the end, I was still more interested in the preliminary results found earlier on in the paper because those results where the basis for the design of the study and decided to move forward with those findings to complete the rest of this project. 
+```{r}
+#install.packages("lmtest")
+library(lmtest)
+
+#install.packages("sandwich")
+library(sandwich)
+library(tidyverse)
+
+#colnames(main_long)
+
+#Row 1 (Self Promotion/ Wave 1) Panel A
+
+
+sf1 <- main_long %>%
+       filter(t_selfpro==1 & allself2==1 & uninform==1)
+
+length(sf1)
+# bucket perf apply succeed
+
+osl_sf.performance<- lm(perf_~female  + num_correct, data=sf1)
+vcov <- vcovHC(osl_sf.performance, type="HC1")
+summary(osl_sf.performance, vcov=vcov)
+
+osl_sf.bucket<- lm(bucket_~female  + num_correct, data=sf1)
+osl_sf.suceed<- lm(succeed_~female-1  + num_correct, data=sf1)
+
+
+
+osl_sf.performance<- lm(perf_~female  + num_correct, data=sf1)
+#Is supposed to be -14.5332 but I got -12.68
+
+#main_long$uninform
+#main_long$inform
+
+#second column
+osl_sf.performance_bucket<- lm(bucket_~female  + num_correct, data=sf1)
+
+#third column
+#main_long$apply_
+osl_sf.performance<- lm(apply_~female  + num_correct, data=sf1)
+
+#fourth column
+#sf1$succeed_
+osl_sf.performance<- lm(succeed_~female  + num_correct, data=sf1)
+
+#To get the results of the rest of the table I would need to edit my dataset based off of what wave they used so for Panel B. I would use this datset instead: 
+
+sf2 <- main_long %>%
+       filter(t_risky==1 & allself2==1 & uninform==1)
+
+#I would repeat running these for each wave and category and combine the resutls using stargazer 
+
+#For Table 3 I would do the exact same thing except I would use the data where participants were informed or when uniform==0
+sf2_inform <- main_long %>%
+       filter(t_selfpro==1 & allself2==1 & uninform==0)
+
+```
+
+
+* * *
+
+## PART THREE<br>
+#### **Evaluating the Result**<br>
+
+
+##### *Testing the Sensitivity to Model Choice*<br>
+```{r}
+
+#education number as a confounder?
+
+#Seeing distribution of education number 
+data_srz<-as.data.frame( table(new.main$educ_num) )
+ggplot(data_srz, aes(x = Var1, y = Freq, fill = Var1)) +  # Plot with values on top
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Freq), vjust = 0)+ labs(title= "Data's Education Number Distribution", 
+       x= "Education Number",
+       y= "Count") 
+
+#distribution of education numbers by gender
+ggplot(new.main, aes(factor(educ_num), fill = factor(female))) +
+  geom_bar(position = "dodge2")+ labs(title= "Education Number and Gender", 
+       x= "Education Number",
+       y= "Count")
+
+t.test(main$educ_num ~main$female)
+
+#original model
+osl_belief_performance<- lm(belief_gap~female, data=new.main)
+summary(osl_belief_performance)
+
+
+#Testing the sensitivity to model choice by adding or removing  features
+
+#factor 
+new.main$educ_num<- as.factor(new.main$educ_num)
+
+#changing the model by adding confounder
+osl_belief_performance2<- lm(belief_gap~female+ educ_num , data=new.main)
+summary(osl_belief_performance2)
+
+```
+
+I wondered why this particular model didn't have a confounder for the education number of the individuals in the data-set as I feel that  someone's education would affect their belief_gap given that intuitively it seems to make sense that a more educated individual might feel more confident in their performance or have a better sense of their own abilities and thus would have a belief gap that is either 0 or positive, respectively. It also appears that education numbers are not evenly distributed between genders, i.e. there is not the same amount of men and women for each education number group. Therefore, I thought it would make sense to change my model so that it had an education number as a confounder.This way, I can help control for the effects of educ_num on the relationship between gender and belief_gap in the model. This can provide a more accurate representation of the underlying relationship between my x and y. My results indicated that the educ_num coefficient was 0.77780 which was statistically significant in having an effect on my outcome. Moreover, by adding a confounder for education number we saw that our beta coefficient for females dropped from 2.8846 to 2.65216, and thus, reducing its overall relationship with beleif_gap.
+
+##### *Testing the Sensitivity to the Model Continued*<br>
+further evaluating the performance of my linear regression model
+
+```{r}
+#install.packages("Stat2Data")
+#install.packages("skimr")
+#install.packages("mosaic")
+#install.packages("infer")
+
+library(tidyverse)
+library(Stat2Data)
+library(skimr)
+library(mosaic)
+library(infer)
+
+#Cross-Validation 
+dim(main)
+set.seed(42)
+3892/2
+which_train<-sample(1:3892, size=1946, replace=FALSE)
+
+training<- main%>% 
+  slice(which_train)
+
+testing<- main%>% 
+  slice(-which_train)
+
+#osl_belief_performance<- lm(belief_gap~female, data=new.main)
+m1<- lm(belief_gap~female, data=training)
+summary(m1)
+
+
+
+testing<- testing%>%  
+  mutate(yhats=predict(m1,newdata=testing))
+
+# testing$yhats is the new predicted values for belief_gap
+
+testing<-testing%>% 
+  mutate(residuals=belief_gap-yhats)
+
+#testing$residuals is the residuals we get 
+
+
+#Now we Evaluate the Models Performance/ explain the results
+
+testing %>% 
+  summarize(cor=cor(belief_gap, yhats)) %>% 
+  mutate(R2=cor^2, shrinkage= summary(m1)$r.squared-R2)
+```
+
+Explaining what these results tell me about the model...
+
+Cross-Validation Correlation = correlation between prediction and actual values
+My cross-validation correlation is a 0.247 which indicates that the model is not making very accurate predictions and may not be a good fit for the data. Given, the context of my data set this would make sense because  predicting for something like the belief gap number would be quite difficult to do because of the many factors that could lead to a person's evaluation of their self. 
+
+Squaring the Cross-Validation Correlation is kind of like an "R^2" value for the testing data set
+My "R^2" is very low at 0.06, this means that 6% of the variance in the dependent variable (belief_gap) is explained by the model. 
+
+
+
+Shrinkage is the difference between the "r^2" for the training data and the squared cross validation correlation
+The shrinkage value is the measure of how much the performance of a model is reduced by regularization. Regularization is a technique used to prevent over fitting in a model by penalizing large coefficients, my coeffincet is very small so it makes sense that my shrinkage value of 0.005599439 would indicate that the regularization has had a relatively small impact on the performance of the model. This means that my model was not at risk of over fitting, whcih we found to be true earlier.
+
+```{r}
+#residuals 
+ggplot(testing, aes(x=yhats, y=residuals))+geom_point() 
+ 
+```
+
+x-axis is unbalanced because we are only look at 0 for male and 1 for female so not too terribly concerned about this
+
+```{r}
+
+testing %>% 
+  summarize(mean(residuals), sd(residuals))
+
+sd(residuals(m1))
+
+```
+When looking at the residuals, ideally I would like the mean to be close to 0 and the SD to be close to the SD of the error term from the fit to the training sample. I found that the mean was relatively close to 0 which is good and that the SD was similar as well! <br>
+
+##### *Testing the result sensitivity to data*<br>
+
+```{r}
+osl_belief_performance<- lm(belief_gap~female, data=new.main)
+result<-osl_belief_performance$coefficients[2]
+
+
+#Taking a look to see if age is evenly distributed for gender
+range(new.main$age)
+
+ggplot(new.main, aes(factor(age), fill = factor(female))) +    scale_x_discrete(limits = levels(new.main$age))+
+  geom_bar(position = "dodge2")+ labs(title= "Age and Gender", 
+       x= "Age",
+       y= "Count")
+
+
+
+t.test(main$age ~main$female)
+summary(lm(belief_gap~age, data=new.main))
+```
+
+There seems to be a large amount of men at age 31. The data also seems to have 
+a lot more younger men compared to women - this might affect the belief_gap as younger individuals might be less adequate at judging their own performance and might over-value their performance which would explain the -correlation in gender (x) when seeing how it might affect belief gap (y). I am also seeing that there is a statistical significance on gender and age (clear difference in the data) as well as belief_gap and age.<br>
+
+
+###### *Editing my Dataset*<br>
+
+```{r}
+#let's edit our dataset to account for this
+#reduce the dataset so that the number of females equals the number of men for every age
+
+library(tidyverse)
+
+
+#create a model with this new data and evaluate its beta 
+
+#how do I count the number of females for each age
+female_subset<- new.main %>%
+      filter(female==1)%>%
+      group_by(age,female)
+female_subset%>%tally()
+
+male_subset<- new.main %>%
+      filter(female==0)%>%
+      group_by(age,female)
+
+
+f_new<-female_subset%>%tally()
+w_values<-f_new$n
+
+
+
+m_new<-male_subset%>%tally()
+m_values<-m_new$n
+
+age<-f_new$age
+class(age)
+class(m_values)
+
+
+
+row_names <- paste("Row", 1:48, sep = "")
+
+
+
+
+checker <- data.frame(age, w_values, m_values, row.names = row_names)
+diff<-checker$m_values-checker$w_values
+
+#I want the w_values and m_values to be the same in main
+checker <- data.frame(age, w_values, m_values,diff, row.names = row_names)
+
+#create a new dataset
+change<-new.main
+
+#reducing the number of men in the dataset 
+men_checker<-checker%>% filter(diff>0) 
+
+#all the ages that need to be edited 
+men_checker$age[1]
+
+#all the diff
+men_checker$diff[1]
+#lets just change age 18 so that its equal 
+i<-1
+men_checker$diff[i]
+men_checker$age[i]
+
+#select 4 men who are aged 18 randomly
+#random_rows<-change%>% filter(female==0) %>% filter(age==men_checker$age[1]) %>% sample_n(men_checker$diff[1])
+random_rows<-change%>% filter(female==0) %>% filter(age==men_checker$age[i]) %>% sample_n(men_checker$diff[i])
+#change <- change %>% anti_join(random_rows)
+ 
+
+#change%>% filter(female==0) %>% filter(age==18)  #this is five! yay
+
+
+
+#Lets loop it for all the men
+length(men_checker$age)
+length(men_checker$diff)
+
+
+total_rows<-data.frame()
+
+for ( i in 1:26){
+  random_rows <- change %>% 
+    filter(female==0) %>% 
+    filter(age==men_checker$age[i]) %>% 
+    sample_n(men_checker$diff[i])
+  
+  total_rows<- bind_rows(total_rows, random_rows)
+}
+
+class(total_rows)
+change <- change %>% anti_join(total_rows, by="age")
+man_change<-change
+  
+#change%>% filter(female==0) %>% filter(age==18)# yay this is five
+```
+
+```{r}
+#now I will edit out random points that are women
+
+#reducing the number of men in the dataset 
+women_checker<-checker%>% filter(diff<0)  #bc diff was caculated by men-women
+dim(women_checker)[1]
+#all the ages that need to be edited 
+women_checker$age[1]
+
+#all the diff
+women_checker$diff[1]
+#lets just change age 19 so that its equal 
+i<-1
+women_checker$diff[i]
+women_checker$age[i]
+
+#select 1 women who is aged 19 randomly
+
+w.random_rows<-change%>% filter(female==1) %>% filter(age==women_checker$age[i]) %>% sample_n(abs(women_checker$diff[i]))
+
+#change <- change %>% anti_join(w.random_rows)
+ 
+
+#change%>% filter(female==1) %>% filter(age==19)  #this is seven! yay
+
+
+
+#Lets loop it for all the men
+
+
+
+w.total_rows<-data.frame()
+
+for ( i in 1:18){
+ w.random_rows<-change%>% 
+   filter(female==1) %>% filter(age==women_checker$age[i]) %>% sample_n(abs(women_checker$diff[i]))
+  
+  w.total_rows<- bind_rows(w.total_rows, w.random_rows)
+}
+
+class(w.total_rows)
+change <- change %>% anti_join(w.total_rows, by="age")
+  
+#Yay my dataframe is finally edited with my new datafame called change ! so now I can run another model with this edited dataset that has an equal number of women and men for each age group to see if that has an effect
+
+ggplot(change, aes(factor(age), fill = factor(female))) +    scale_x_discrete(limits = levels(change$age))+
+  geom_bar(position = "dodge2")+ labs(title= "Age and Gender", 
+       x= "Age",
+       y= "Count")
+
+#this distribution looks more even
+new_regress<-lm(belief_gap~female, data=change)
+summary(new_regress)
+#still significant
+
+```
+I can see that the beta coefficient female dropped by 0.5722 reducing its affect on y. 
+
+```{r}
+#let's see what fraction of the dataset that I removed
+(dim(new.main)[1]-  dim(change)[1]) / dim(new.main)[1]
+
+#okay that's way too much let's just remove the values where there was an extremely larger amount of young men 
+
+boxplot(men_checker$diff)
+
+#seems like values greater than 50 for difference in counts are the outliers 
+ #have these values equal for men and women instead 
+
+change2<-new.main
+#reducing the number of men in the dataset 
+men_checker<-checker%>% filter(diff>50) 
+
+#all the ages that need to be edited 
+men_checker$age[1]
+
+#all the diff
+men_checker$diff[1]
+#lets just change age 28 so that its equal / reduces 64 men from the datset 
+i<-1
+men_checker$diff[i]
+men_checker$age[i]
+
+#ages 28,29,30,32
+
+#select 64 men who are aged 28 randomly
+#random_rows<-change%>% filter(female==0) %>% filter(age==men_checker$age[1]) %>% sample_n(men_checker$diff[1])
+random_rows<-change2%>% filter(female==0) %>% filter(age==men_checker$age[i]) %>% sample_n(men_checker$diff[i])
+#change2<- change2 %>% anti_join(random_rows)
+ 
+
+#change2%>% filter(female==0) %>% filter(age==28)  #this is 53! (117-64) yay
+
+
+#Lets loop it for all the men
+length(men_checker$age)
+length(men_checker$diff)
+
+
+total_rows2<-data.frame()
+
+for ( i in 1:4){
+  random_rows<-change2%>% filter(female==0) %>% filter(age==men_checker$age[i]) %>% sample_n(men_checker$diff[i])
+  total_rows2<- bind_rows(total_rows2, random_rows)
+}
+
+class(total_rows2)
+change2<- change2 %>% anti_join(total_rows2, by="age")
+#man_change<-change
+  
+#change%>% filter(female==0) %>% filter(age==18)# yay this is five
+
+
+
+ggplot(change2, aes(factor(age), fill = factor(female))) +    scale_x_discrete(limits = levels(change2$age))+
+  geom_bar(position = "dodge2")+ labs(title= "Age and Gender", 
+       x= "Age",
+       y= "Count")
+
+
+```
+
+```{r}
+#now let's see what fraction of the dataset I removed
+(dim(new.main)[1]-  dim(change2)[1]) / dim(new.main)[1]
+
+#this seems like a good amount 
+
+edited_osl<- lm(belief_gap~female, data=change2)
+summary(edited_osl)
+new_result<-edited_osl$coefficients[2]
+
+diff<-result-new_result
+print(diff)
+
+0.6578288 / 2.884573
+
+```
+
+To test my result's sensitivity to data, I removed where men were over-represented in certain ages, specifically the ages 28,29,30 and 32. It appeared that age was statistically significant when determining the outcome: belief gap and my dataset indicated that there were a much larger number of men for certain ages.  I decided to edit my dataset so that it randomly removed data of men who were aged 28,29,30 and 32. I ran another regression model with my edited data and found a new beta coefficient for female -2.2267. This was 0.6578288  less than my original beta. This is a 22.8 % change from the original beta and it seems quite large considering the original beta coefficient is already a very small number. This tells me that once we account for the over-representation in men of certain ages in the dataset the slope coefficient decrease. This indicates that line of best fit becomes flatter, which indicates a weaker relationship between the two variables. This made made me concerned about original my model potentially overfitting and what that would say about my beta coefficient result, and so I wanted to compare the mean of the squared residuals between training and test data sets for each model (my original model and the one I derived from my changed data set) to see if my new model ie the one with edited dataset has a better fit. 
+<br>
+
+###### *Evaluating my two models and comparing to see if one is "better" or not*<br>
+
+```{r}
+#Seeing how well my original regression fits 
+
+#osl_belief_performance<- lm(belief_gap~female, data=new.main)
+
+dim(new.main)[1]
+
+new.main<-na.omit(new.main)
+k<-17  #17 fold test 
+n<- dim(new.main)[1]/ k
+
+rand_group<- sample(rep(1:k, n))
+length(rand_group)
+cv<-split(new.main, rand_group)
+
+
+print(class(cv))
+print(names(cv))
+
+head(cv[[1]])
+
+
+#this is for my first fold (data set of 211)
+i<-1
+test_df<-cv[[i]]
+train_df<-do.call(rbind, cv[-i])
+length(train_df)
+length(test_df)
+
+slr<- lm(belief_gap~female, data=train_df)
+pred_slr<-predict(slr, newdata=test_df)
+length(test_df$belief_gap)
+length(pred_slr)
+diff<-test_df$belief_gap-pred_slr
+
+#Need to run through all of my folds 
+
+test_errors<-rep(NA,k)
+train_errors<-rep(NA, k)
+
+
+for( i in seq_len(k)){
+  test_df<-cv[[i]]
+  train_df<-do.call(rbind, cv[-i])
+  
+  slr<- lm(belief_gap~female, data=train_df)
+  pred_slr<-predict(slr, newdata=test_df)
+  length(test_df$belief_gap)
+  length(pred_slr)
+  
+  train_errors[i]<- mean(slr$residuals^2) 
+  
+  test_errors[i]<-mean((test_df$belief_gap- pred_slr)^2) #issue here
+ 
+
+}
+
+
+train_fit_error<-mean(train_errors) #mean of the squared residuals can be used to evaluate the performance of a linear regression model and to determine how well the model is fitting the data. A smaller mean of the squared residuals indicates that the model is making more accurate predictions and has a better fit to the data.
+
+#the trained errors has a smaller mean at 1.07 which means that the training model has a good fit of the data
+
+test_fit_error<-mean(test_errors) #tells me the measure of the lack of fit in the linear regression/ can be used to compare the performance of different models or to determine how well the model is fitting the data.can be used to evaluate the performance of a linear regression model and to determine how well the model is fitting the data. A smaller mean of the squared differences indicates that the model is making more accurate predictions and has a better fit to the data.
+
+#the testing set has a really bad fit to the data because the mean error is so high.
+
+train_fit_error
+test_fit_error
+```
+These errors suggest that my original model with my unchanged data set, is likely to be performing well, as it is able to accurately predict the dependent variable using the independent variables in both the training and the testing sets.
+
+Now I'm going to take a look at my new regression model that is derived from my edited data set.
+```{r}
+edited_osl<- lm(belief_gap~female, data=change2)
+
+
+dim(change2)[1]
+
+
+k<-19  #17 fold test 
+n<- dim(change2)[1]/ k
+
+
+#Need to run through all of my folds 
+
+rand_group<- sample(rep(1:k, n))
+length(rand_group)
+cv<-split(change2, rand_group)
+
+
+print(class(cv))
+print(names(cv))
+
+head(cv[[1]])
+
+
+#this is for my first fold (data set of 211)
+i<-1
+test_df<-cv[[i]]
+train_df<-do.call(rbind, cv[-i])
+length(train_df)
+length(test_df)
+
+slr<- lm(belief_gap~female, data=train_df)
+pred_slr<-predict(slr, newdata=test_df)
+length(test_df$belief_gap)
+length(pred_slr)
+diff<-test_df$belief_gap-pred_slr
+
+
+test_errors<-rep(NA,k)
+train_errors<-rep(NA, k)
+
+
+for( i in seq_len(k)){
+  test_df<-cv[[i]]
+  train_df<-do.call(rbind, cv[-i])
+  
+  slr<- lm(belief_gap~female, data=train_df)
+  pred_slr<-predict(slr, newdata=test_df)
+  length(test_df$belief_gap)
+  length(pred_slr)
+  
+  train_errors[i]<- mean(slr$residuals^2) 
+  
+  test_errors[i]<-mean((test_df$belief_gap- pred_slr)^2) #issue here
+ 
+
+}
+
+
+train_fit_error2<-mean(train_errors) #mean of the squared residuals can be used to evaluate the performance of a linear regression model and to determine how well the model is fitting the data. A smaller mean of the squared residuals indicates that the model is making more accurate predictions and has a better fit to the data.
+
+#the trained errors has a smaller mean at 1.07 which means that the training model has a good fit of the data
+
+test_fit_error2<-mean(test_errors)
+
+diff1<-train_fit_error-test_fit_error
+diff2<-train_fit_error2-test_fit_error2
+
+```
+The results were quite similar. From this we can tell that my new  model with my changed dataset also has errors that are very close indicating that this model fits as well. However comparing between these two model's errors it seems that the average error for my edited model is smaller.<br>  
+
+###### *Conclusions for Evaluating the Result by changing the data(My beta coefficient)*<br>
+It seems that removing a small fraction of points that might have made my dataset biased  affected my coefficient by weakening its relationship with the ouctome belief-performance. However, after testing my original model as well as my new model with cross validation, I found that both models seemed to be fitting well. 
+
+
+
+
+
+
